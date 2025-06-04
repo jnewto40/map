@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Single Student Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Leaflet CSS for map styling -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+            background-color: #f0f4f8; /* Light background */
+        }
+        #mapid {
+            height: 80vh; /* Responsive height */
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .legend {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            margin: 10px; /* Spacing around the boxes */
+        }
+        .legend h4 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        .legend i {
+            width: 20px;
+            height: 20px;
+            float: left;
+            margin-right: 10px;
+            opacity: 0.8;
+            border-radius: 50%; /* Circular legend markers */
+            border: 1px solid rgba(0,0,0,0.1); /* Slight border for definition */
+        }
+        .birth-marker-dot { background-color: #3498db; } /* Blue for birth */
+        .work-marker-dot { background-color: #e74c3c; } /* Red for work */
+        .yale-marker-dot { background-color: #27ae60; } /* Green for Yale */
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #mapid {
+                height: 60vh; /* Adjust height for smaller screens */
+            }
+            .legend {
+                margin: 5px;
+                padding: 10px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="mapid"></div>
+
+    <!-- Map Legend -->
+    <div class="legend" style="position: absolute; bottom: 20px; left: 10px; z-index: 1000;">
+        <h4>Legend</h4>
+        <div><i class="birth-marker-dot"></i> Birth Location</div>
+        <div><i class="work-marker-dot"></i> Work Location</div>
+        <div><i class="yale-marker-dot"></i> Yale Forest School (New Haven, CT)</div>
+        <div><svg width="20" height="20" style="float: left; margin-right: 10px;"><line x1="0" y1="10" x2="20" y2="10" stroke="blue" stroke-width="2" stroke-dasharray="4 2" /></svg> Birthplace to Yale</div>
+        <div><svg width="20" height="20" style="float: left; margin-right: 10px;"><line x1="0" y1="10" x2="20" y2="10" stroke="red" stroke-width="2" /></svg> Yale to Work Location</div>
+    </div>
+
+    <!-- Leaflet JavaScript library -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the map and set its view to a general US center
+            var map = L.map('mapid').setView([39.8283, -98.5795], 4); // Centered on approximate US center, zoom level 4
+
+            // Add an OpenStreetMap tile layer to the map
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Define New Haven, CT coordinates (Yale Forest School)
+            const newHavenCoords = [41.3083, -72.9213]; // Latitude, Longitude for New Haven, CT
+
+            // Add a marker for Yale Forest School
+            L.circleMarker(newHavenCoords, {
+                color: '#27ae60', // Green color
+                fillColor: '#27ae60',
+                fillOpacity: 0.8,
+                radius: 8
+            }).addTo(map).bindPopup("<b>Yale Forest School</b><br>New Haven, CT");
+
+            // Data for a single student (William Burnett Barrows)
+            var data = [
+                {
+                    "Name": "William Burnett Barrows",
+                    "Category": "Graduate (M.F.)",
+                    "Birthplace": {
+                        "Location": "Matthewson, Kans.",
+                        "Latitude": 39.0481,
+                        "Longitude": -97.0264
+                    },
+                    "WorkLocations": [
+                        {
+                            "Location": "United States Forest Service, Washington office",
+                            "Years": "Since July 1, 1907",
+                            "Latitude": 38.893595,
+                            "Longitude": -77.01458
+                        },
+                        {
+                            "Location": "Montana (estimating timber)",
+                            "Years": "Summer 1909 (seven months)",
+                            "Latitude": 46.8797,
+                            "Longitude": -110.3626
+                        }
+                    ]
+                }
+            ];
+
+            // Function to process and add markers and straight lines to the map
+            function addMarkersAndLines() {
+                data.forEach(function(person) {
+                    // Birthplace marker
+                    if (person.Birthplace && person.Birthplace.Latitude !== null && person.Birthplace.Longitude !== null) {
+                        var birthPopupContent = document.createElement('div');
+                        birthPopupContent.innerHTML =
+                            "<b>Name:</b> " + person.Name + "<br>" +
+                            "<b>Category:</b> " + person.Category + "<br>" +
+                            "<b>Birthplace:</b> " + person.Birthplace.Location;
+
+                        var birthMarker = L.circleMarker([person.Birthplace.Latitude, person.Birthplace.Longitude], {
+                            color: '#3498db', // Blue color
+                            fillColor: '#3498db',
+                            fillOpacity: 0.8,
+                            radius: 8
+                        }).addTo(map);
+                        birthMarker.bindPopup(birthPopupContent);
+
+                        // Draw straight line from Birthplace to New Haven
+                        L.polyline([
+                            [person.Birthplace.Latitude, person.Birthplace.Longitude],
+                            newHavenCoords
+                        ], {
+                            color: 'blue',
+                            weight: 2,
+                            dashArray: '5, 5', // Dashed line
+                            opacity: 0.7
+                        }).addTo(map);
+                    }
+
+                    // Work locations markers and straight lines from New Haven
+                    person.WorkLocations.forEach(function(workLoc) {
+                        if (workLoc.Latitude !== null && workLoc.Longitude !== null) {
+                            var workPopupContent = document.createElement('div');
+                            workPopupContent.innerHTML =
+                                "<b>Name:</b> " + person.Name + "<br>" +
+                                "<b>Work Location:</b> " + workLoc.Location + "<br>" +
+                                "<b>Years:</b> " + workLoc.Years;
+
+                            var workMarker = L.circleMarker([workLoc.Latitude, workLoc.Longitude], {
+                                color: '#e74c3c', // Red color
+                                fillColor: '#e74c3c',
+                                fillOpacity: 0.8,
+                                radius: 8
+                            }).addTo(map);
+                            workMarker.bindPopup(workPopupContent);
+
+                            // Draw straight line from New Haven to Work Location
+                            L.polyline([
+                                newHavenCoords,
+                                [workLoc.Latitude, workLoc.Longitude]
+                            ], {
+                                color: 'red',
+                                weight: 2,
+                                opacity: 0.7
+                            }).addTo(map);
+                        }
+                    });
+                });
+            }
+
+            // Call the function to add markers and lines
+            addMarkersAndLines();
+        }); // End of DOMContentLoaded
+    </script>
+</body>
+</html>
